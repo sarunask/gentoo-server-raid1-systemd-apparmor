@@ -1,0 +1,36 @@
+# directory structure
+dir /bin        755 0 0
+dir /dev        755 0 0
+dir /etc        755 0 0
+dir /lib64      755 0 0
+dir /mnt        755 0 0
+dir /mnt/root   755 0 0
+dir /proc       755 0 0
+dir /root       700 0 0
+dir /sbin       755 0 0
+dir /sys        755 0 0
+dir /var        755 0 0
+
+# busybox (compiled with USE="static")
+file /bin/busybox                   /bin/busybox                755 0 0
+
+# mdadm (compiled with USE="static")
+file /sbin/mdadm                    /sbin/mdadm                 755 0 0
+
+# jfsutils
+file /sbin/jfs_fsck                 /sbin/jfs_fsck              755 0 0
+file /sbin/jfs_fscklog              /sbin/jfs_fscklog           755 0 0
+file /sbin/jfs_logdump              /sbin/jfs_logdump           755 0 0
+file /sbin/jfs_mkfs                 /sbin/jfs_mkfs              755 0 0
+file /sbin/jfs_debugfs              /sbin/jfs_debugfs           755 0 0
+file /sbin/jfs_tune                 /sbin/jfs_tune              755 0 0
+
+# Dependencies
+file /lib64/ld-linux-x86-64.so.2    /lib64/ld-linux-x86-64.so.2 755 0 0
+file /lib64/libc.so.6               /lib64/libc.so.6            755 0 0
+
+# init script
+file /init                          /usr/src/initramfs/init     755 0 0
+
+# config for md RAID
+file /etc/mdadm.conf                /etc/mdadm.conf             644 0 0

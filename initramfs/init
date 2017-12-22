@@ -1,0 +1,63 @@
+#!/bin/busybox sh
+
+ROOT_MOUNT_LABEL="rootfs"
+ROOT_MOUNT_OPTS="defaults,notime"
+SWAP_MOUNT_LABEL="swap"
+
+rescue_shell() {
+    echo "$@"
+    echo "Something went wrong. Dropping you to a shell."
+    busybox --install -s
+    exec /bin/sh
+}
+
+run_mdadm() {
+    echo "Assembling RAID arrays"
+
+    /sbin/mdadm --assemble --scan || return 1
+}
+
+mount_root() {
+    echo "Mounting root filesystem"
+
+    /sbin/jfs_fsck $(dev_by_label "$ROOT_MOUNT_LABEL")
+    mount -o $ROOT_MOUNT_OPTS \
+        $(dev_by_label "$ROOT_MOUNT_LABEL") /mnt/root
+}
+
+mount_swap() {
+    echo "Enabling swap"
+
+    swapon $(dev_by_label "$SWAP_MOUNT_LABEL")
+}
+
+dev_by_label() {
+    findfs LABEL="$1" || {
+        echo "FS with LABEL=$1 not found"
+        return 1
+    }
+}
+
+# Temporarily mount /proc, /sys and /dev filesystems.
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev
+
+# Disable kernel messages from popping onto the screen.
+echo 0 > /proc/sys/kernel/printk
+
+clear
+
+run_mdadm  || rescue_shell "Failed to assemble RAID arrays!"
+mount_root || rescue_shell "Failed to mount root filesystem!"
+mount_swap || echo "Failed to mount swap. This is not critical, so keep going."
+
+echo "All done, switching to real root."
+
+# Clean up; the init process will remount them later.
+umount /proc
+umount /sys
+umount /dev
+
+# Switch to the real root and execute init.
+exec switch_root /mnt/root /usr/lib/systemd/systemd

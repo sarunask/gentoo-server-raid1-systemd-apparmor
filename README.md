@@ -72,3 +72,98 @@ If you need to replace failed disk, example
 ```
 mdadm --add /dev/md0 /dev/sdb2
 ```
+Generate /etc/mdadm.conf from current config
+```
+mdadm --detail --scan >> /etc/mdadm.conf
+```
+
+
+## Create file systems and install Gentoo
+
+```bash
+mkfs.vfat -n boot /dev/md0
+mkswap -L swap /dev/md1
+mkfs.jfs -L rootfs /dev/md2
+swapon /dev/md1
+mount /dev/md2 /mnt/gentoo
+mkdir /mnt/gentoo/boot
+mount /dev/md0 /mnt/gentoo/boot/
+cp /etc/mdadm.conf /mnt/gentoo/etc/
+```
+
+**NOTE: Please edit /etc/mdadm.conf and remove 'name=xxxxxx:xxxxx' parameter in array config, otherwise you would not be able to boot** 
+
+Follow [Gentoo Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64/Installation/Stage) and use stage3-amd64-hardened+nomultilib till you install stage3 and see Systemd mentioned.
+After that point start following [Systemd Handbook](https://wiki.gentoo.org/wiki/Systemd).
+
+**NOTE: Configuring Gentoo-sources you should use recommended settings from [here](http://kernsec.org/wiki/index.php/Kernel_Self_Protection_Project/Recommended_Settings#x86_64_2) to enhance security.** 
+
+## Some static binaries
+You would need some static utils, so before emerge make use of those flags:
+```bash
+echo "sys-fs/jfsutils static" >> /etc/portage/package.use/system
+echo "sys-apps/busybox static" >> /etc/portage/package.use/system
+echo "sys-fs/mdadm static" >> /etc/portage/package.use/system
+echo "sys-apps/util-linux static-libs" >> /etc/portage/package.use/system
+```
+
+## Enable SystemD and AppArmor
+
+```bash
+emerge -1 gentoolkit
+euse -E systemd
+euse -E -ipv6
+euse -E apparmor
+mkdir /etc/portage/profile
+echo "-apparmor" >> /etc/portage/profile/use.mask
+emerge -DuavN @world
+emerge apparmor apparmor-utils
+```
+
+## Generate own initfs image
+
+```bash
+mkdir /usr/src/initramfs
+```
+
+You would need to emerge utils in such order as used below.
+Note: jfsutils would fail build statically without static-libs USE flag on util-linux
+```bash
+emerge -1 sys-apps/util-linux
+emerge -1 jfsutils mdadm busybox
+```
+Copy initramfs files to /usr/src/initramfs
+Generate initramfs:
+```
+cd /usr/src/linux
+make -C /usr/src/linux/usr/ gen_init_cpio
+./scripts/gen_initramfs_list.sh -o /boot/initrd.cpio.gz /usr/src/initramfs/initramfs_list
+```
+
+## Install Grub:2
+```
+echo 'GRUB_PLATFORMS="efi-64"' >> /etc/portage/make.conf
+emerge -av grub:2
+grub-install --target=x86_64-efi --efi-directory=/boot --removable
+grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+## Final touches before reboot
+```
+passwd
+useradd -m -g users,wheel some_user
+passwd some_user
+```
+
+# Useful links
+Mdadm:
+1. http://www.ducea.com/2009/03/08/mdadm-cheat-sheet/
+1. https://ubuntuforums.org/showthread.php?t=1947275
+1. https://ubuntuforums.org/showthread.php?t=1950154
+1. https://www.howtoforge.com/replacing_hard_disks_in_a_raid1_array
+
+SystemD:
+1. https://wiki.gentoo.org/wiki/Systemd
+
+Kernel Protection (as GRSecurity is not OS now):
+1. http://kernsec.org/wiki/index.php/Kernel_Self_Protection_Project/Recommended_Settings
