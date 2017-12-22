@@ -167,3 +167,6 @@ SystemD:
 
 Kernel Protection (as GRSecurity is not OS now):
 1. http://kernsec.org/wiki/index.php/Kernel_Self_Protection_Project/Recommended_Settings
+
+Custom initrd
+1. https://wiki.gentoo.org/wiki/Custom_Initramfs

@@ -1,7 +1,7 @@
 #!/bin/busybox sh
 
 ROOT_MOUNT_LABEL="rootfs"
-ROOT_MOUNT_OPTS="defaults,notime"
+ROOT_MOUNT_OPTS="defaults"
 SWAP_MOUNT_LABEL="swap"
 
 rescue_shell() {
@@ -25,12 +25,6 @@ mount_root() {
         $(dev_by_label "$ROOT_MOUNT_LABEL") /mnt/root
 }
 
-mount_swap() {
-    echo "Enabling swap"
-
-    swapon $(dev_by_label "$SWAP_MOUNT_LABEL")
-}
-
 dev_by_label() {
     findfs LABEL="$1" || {
         echo "FS with LABEL=$1 not found"
@@ -50,7 +44,6 @@ clear
 
 run_mdadm  || rescue_shell "Failed to assemble RAID arrays!"
 mount_root || rescue_shell "Failed to mount root filesystem!"
-mount_swap || echo "Failed to mount swap. This is not critical, so keep going."
 
 echo "All done, switching to real root."
 
